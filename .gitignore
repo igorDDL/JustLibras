@@ -1,0 +1,16 @@
+# Pasta do Ambiente Virtual
+venv/
+
+# Modelos de IA e Arquivos Binários
+*.pkl
+*.h5
+
+# Arquivos de Dados
+*.csv
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Arquivos de configuração do VSCode
+.vscode/
