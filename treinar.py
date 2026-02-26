@@ -68,7 +68,7 @@ while cap.isOpened():
             #LÓGICA DE COLETA DE DADOS 
             
             #Checar se a tecla pressionada é uma das letras
-            if key != 255 and chr(key) in LETTERS_TO_COLLECT: # key != 255 significa que uma tecla foi pressionada
+            if key != 255 and chr(key) in LETTERS_TO_COLLECT:
                 label = chr(key)
                 landmarks = hand_landmarks.landmark
                 data_row = [label]

@@ -1,0 +1,132 @@
+[
+    {
+        "tempo_alvo": 3297,
+        "sinal": "c",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 4504,
+        "sinal": "m",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 5990,
+        "sinal": "s",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 7500,
+        "sinal": "m",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 8707,
+        "sinal": "r",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 9914,
+        "sinal": "r",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 12910,
+        "sinal": "c",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 15348,
+        "sinal": "f",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 18088,
+        "sinal": "s",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 19574,
+        "sinal": "m",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 22360,
+        "sinal": "r",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 23568,
+        "sinal": "c",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 25007,
+        "sinal": "d",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 26586,
+        "sinal": "f",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 27794,
+        "sinal": "c",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 29373,
+        "sinal": "f",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 30580,
+        "sinal": "l",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 32159,
+        "sinal": "r",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 33390,
+        "sinal": "d",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 34597,
+        "sinal": "s",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 36176,
+        "sinal": "m",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 38986,
+        "sinal": "c",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 41401,
+        "sinal": "l",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 44094,
+        "sinal": "r",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 45627,
+        "sinal": "m",
+        "atingida": false
+    },
+    {
+        "tempo_alvo": 47229,
+        "sinal": "d",
+        "atingida": false
+    }
+]
