@@ -7,7 +7,7 @@ pygame.mixer.init()
 
 # ---------------- CONFIGURAÇÕES ----------------
 ARQUIVO_MUSICA = "sons/Tetris.mp3"
-ARQUIVO_MAPA = "beatmap.json"
+ARQUIVO_MAPA = "mapas/novo_mapa.json"
 
 # Teclas que o script vai reconhecer e salvar
 TECLAS_VALIDAS = {

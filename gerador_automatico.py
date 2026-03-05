@@ -4,7 +4,7 @@ import random
 
 # ---------------- CONFIGURAÇÕES ----------------
 ARQUIVO_MUSICA = "sons/Tetris.mp3"
-ARQUIVO_MAPA = "beatmap.json"
+ARQUIVO_MAPA = "mapas/novo_mapa.json"
 SINAIS = ['d', 'r', 'm', 'f', 's', 'l', 'c']
 
 # 1. TEMPO - 1.2 segundos para trocar de mão

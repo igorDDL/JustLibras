@@ -1,17 +1,35 @@
+import pygame
+import sys
+import os
+
+# ==========================================
+# 1. INICIALIZAÇÃO IMEDIATA (SPLASH SCREEN)
+# ==========================================
+pygame.init()
+WIDTH, HEIGHT = 1280, 720
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Just Libras - Rhythm Edition")
+
+# Carregar uma fonte
+CAMINHO_FONTE = "fontes/Limpa.ttf" 
+font_loading = pygame.font.Font(CAMINHO_FONTE, 40) if os.path.exists(CAMINHO_FONTE) else pygame.font.SysFont(None, 40)
+
+# Desenhar a tela de carregamento
+screen.fill((15, 35, 70)) #Azul Escuro
+texto_loading = font_loading.render("Carregando...", True, (250, 250, 250))
+screen.blit(texto_loading, (WIDTH // 2 - texto_loading.get_width() // 2, HEIGHT // 2))
+pygame.display.flip() 
+
+# =======================
+# 2. CARREGAMENTO PESADO
+# =======================
 import cv2
 import mediapipe as mp
 import pickle
 import numpy as np
-import pygame
-import sys
 import json
-import os
 
-# ==========================================
-# 1. INICIALIZAÇÃO DE MODELOS E MEDIAPIPE
-# ==========================================
 MODEL_FILE = 'libras_model.pkl'
-
 try:
     with open(MODEL_FILE, 'rb') as f:
         model_data = pickle.load(f)
@@ -19,10 +37,7 @@ try:
     scaler = model_data['scaler']
     print(f"Modelo '{MODEL_FILE}' carregado com sucesso!")
 except FileNotFoundError:
-    print(f"Erro: Arquivo do modelo '{MODEL_FILE}' não encontrado.")
-    sys.exit()
-except Exception as e:
-    print(f"Erro ao carregar o modelo: {e}")
+    print(f"Erro: Ficheiro do modelo '{MODEL_FILE}' não encontrado.")
     sys.exit()
 
 mp_hands = mp.solutions.hands
@@ -33,16 +48,23 @@ hands = mp_hands.Hands(
 )
 mp_drawing = mp.solutions.drawing_utils
 
-# ==========================================
-# 2. CONFIGURAÇÕES DE VÍDEO E ÁUDIO
-# ==========================================
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("Erro: Não foi possível abrir a câmera.")
-    sys.exit()
+# INICIALIZAÇÃO DA CÂMARA 
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+if not cap.isOpened():
+   
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Erro: Não foi possível abrir a câmara.")
+        sys.exit()
+
+# Reajusta o tamanho da tela caso a câmara não suporte HD
 WIDTH = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 HEIGHT = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 pygame.mixer.init()
 pygame.init()
@@ -56,11 +78,17 @@ if not os.path.exists(CAMINHO_FONTE):
 else:
     def get_font(size): return pygame.font.Font(CAMINHO_FONTE, size)
 
-font_rank_gigante = get_font(200) 
-font_titulo_performance = get_font(80)
+font_titulo = get_font(90)
 font_grande = get_font(60)
 font_media = get_font(40)
 font_pequena = get_font(30)
+
+COR_AZUL_ESCURO = (15, 35, 70)
+COR_AZUL_CLARO = (50, 150, 255)
+COR_BRANCO = (250, 250, 250)
+COR_DOURADO = (255, 200, 50)
+COR_BOTAO = (25, 60, 110)
+COR_BOTAO_HOVER = (40, 90, 160)
 
 try:
     som_acerto = pygame.mixer.Sound("sons/acerto.mp3")
@@ -73,114 +101,130 @@ try:
 except: som_falha = None
 
 volume_atual = 0.5
+pygame.mixer.music.set_volume(volume_atual)
 
 # ==========================================
 # 3. VARIÁVEIS DE ESTADO E PLAYLIST
 # ==========================================
-# SISTEMA DE PLAYLIST
 PLAYLIST = [
-    {"titulo": "Super Mario", "audio": "sons/super_mario.mp3", "mapa": "mapa_mario.json"},
-    {"titulo": "Tetris Theme", "audio": "sons/Tetris.mp3", "mapa": "mapa_tetris.json"}
+    {"titulo": "Super Mario", "audio": "sons/super_mario.mp3", "mapa": "mapas/mapa_mario.json"},
+    {"titulo": "Tetris Theme", "audio": "sons/Tetris.mp3", "mapa": "mapas/mapa_tetris.json"}
 ]
-musica_selecionada = 0 # Índice da música atual na tela
+musica_selecionada = 0 
 
 pontos = 0
 notas_acertadas = 0
 total_notas = 0
 feedback_cor = (0, 0, 0)
-HIT_ZONE_Y = HEIGHT - 100
+HIT_ZONE_Y = HEIGHT - 120
 TEMPO_VISIVEL = 2000
 JANELA_ACERTO = 400
 
-estado_jogo = "MENU" 
-
-largura_btn = 350
-altura_btn = 80
-botao_start = pygame.Rect(WIDTH // 2 - largura_btn // 2, HEIGHT // 2 + 50, largura_btn, altura_btn)
-botao_voltar = pygame.Rect(WIDTH // 2 - largura_btn // 2, HEIGHT - 120, largura_btn, altura_btn)
-
+estado_jogo = "MENU_PRINCIPAL" 
 MUSICA_ATUAL = []
 
+# ==========================================
+# 4. FUNÇÕES AUXILIARES
+# ==========================================
 def calcular_rank(taxa):
-    if taxa >= 95: return "S", (255, 215, 0) 
-    if taxa >= 85: return "A", (0, 255, 0)   
-    if taxa >= 70: return "B", (0, 200, 255) 
-    if taxa >= 50: return "C", (255, 165, 0) 
-    return "D", (255, 0, 0)                 
+    if taxa >= 95: return "S", COR_DOURADO 
+    if taxa >= 85: return "A", (50, 220, 100)   
+    if taxa >= 70: return "B", COR_AZUL_CLARO 
+    if taxa >= 50: return "C", (255, 140, 0) 
+    return "D", (220, 50, 50)                 
+
+def desenhar_botao(texto, rect, hover, preenchido=True):
+    cor = COR_BOTAO_HOVER if hover else COR_BOTAO
+    if preenchido:
+        pygame.draw.rect(screen, cor, rect, border_radius=12)
+    pygame.draw.rect(screen, COR_BRANCO, rect, width=2, border_radius=12)
+    
+    superficie_texto = font_media.render(texto, True, COR_BRANCO)
+    screen.blit(superficie_texto, (rect.centerx - superficie_texto.get_width() // 2, rect.centery - superficie_texto.get_height() // 2))
 
 def iniciar_partida():
     global MUSICA_ATUAL, pontos, notas_acertadas, total_notas, feedback_cor
-    
     nivel = PLAYLIST[musica_selecionada]
-    
-    # Carrega o mapa específico da música escolhida
     try:
         with open(nivel["mapa"], "r") as f:
             MUSICA_ATUAL = json.load(f)
         total_notas = len(MUSICA_ATUAL)
     except FileNotFoundError:
-        print(f"Erro: Arquivo '{nivel['mapa']}' não encontrado.")
-        print("Certifique-se de que o arquivo existe na pasta antes de jogar esta música!")
+        print(f"Erro: Ficheiro '{nivel['mapa']}' não encontrado.")
         sys.exit()
     
-    # Carrega e toca o áudio específico
     pygame.mixer.music.load(nivel["audio"])
     pygame.mixer.music.set_volume(volume_atual)
     
     pontos = 0
     notas_acertadas = 0
     feedback_cor = (0, 0, 0)
-    
-    for nota in MUSICA_ATUAL:
-        nota["atingida"] = False
-        
+    for nota in MUSICA_ATUAL: nota["atingida"] = False
     pygame.mixer.music.play()
 
 # ==========================================
-# 4. LOOP PRINCIPAL
+# 5. LOOP PRINCIPAL
 # ==========================================
 running = True
 while running:
+    mouse_pos = pygame.mouse.get_pos()
     
-    # Configuração dos botões de seta dinamicamente
-    texto_musica_menu = font_grande.render(PLAYLIST[musica_selecionada]["titulo"], True, (0, 255, 255))
-    pos_y_selecao = HEIGHT // 2 - 60
-    btn_esq = pygame.Rect(WIDTH // 2 - texto_musica_menu.get_width() // 2 - 80, pos_y_selecao, 60, 60)
-    btn_dir = pygame.Rect(WIDTH // 2 + texto_musica_menu.get_width() // 2 + 20, pos_y_selecao, 60, 60)
+    # BOTÕES 
+    centro_x = WIDTH // 2
+    largura_btn, altura_btn = 340, 70
+    btn_jogar = pygame.Rect(centro_x - largura_btn // 2, HEIGHT // 2 - 60, largura_btn, altura_btn)
+    btn_instrucoes = pygame.Rect(centro_x - largura_btn // 2, HEIGHT // 2 + 30, largura_btn, altura_btn)
+    btn_config = pygame.Rect(centro_x - largura_btn // 2, HEIGHT // 2 + 120, largura_btn, altura_btn)
+    largura_btn_voltar, altura_btn_voltar = 260, 60
+    btn_voltar = pygame.Rect(centro_x - largura_btn_voltar // 2, HEIGHT - 100, largura_btn_voltar, altura_btn_voltar)
+    
+    btn_iniciar_musica = pygame.Rect(centro_x - largura_btn // 2, HEIGHT // 2 + 80, largura_btn, altura_btn)
+    
+    btn_vol_menos = pygame.Rect(centro_x - 120, HEIGHT // 2 - 20, 60, 60)
+    btn_vol_mais = pygame.Rect(centro_x + 60, HEIGHT // 2 - 20, 60, 60)
+    
+    texto_musica = font_grande.render(PLAYLIST[musica_selecionada]["titulo"], True, COR_AZUL_CLARO)
+    btn_esq = pygame.Rect(centro_x - texto_musica.get_width() // 2 - 80, HEIGHT // 2 - 50, 60, 60)
+    btn_dir = pygame.Rect(centro_x + texto_musica.get_width() // 2 + 20, HEIGHT // 2 - 50, 60, 60)
 
     # --- PROCESSAMENTO DE EVENTOS ---
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        if event.type == pygame.QUIT: running = False
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_q:
-                running = False
-            if event.key == pygame.K_UP:
-                volume_atual = min(1.0, volume_atual + 0.1)
-                pygame.mixer.music.set_volume(volume_atual)
-            if event.key == pygame.K_DOWN:
-                volume_atual = max(0.0, volume_atual - 0.1)
-                pygame.mixer.music.set_volume(volume_atual)
-        
+            if event.key == pygame.K_q: running = False
+
         if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos() 
-            if estado_jogo == "MENU":
-                if botao_start.collidepoint(mouse_pos): 
+            if estado_jogo == "MENU_PRINCIPAL":
+                if btn_jogar.collidepoint(mouse_pos): estado_jogo = "SELECAO_MUSICA"
+                elif btn_instrucoes.collidepoint(mouse_pos): estado_jogo = "INSTRUCOES"
+                elif btn_config.collidepoint(mouse_pos): estado_jogo = "CONFIGURACOES"
+            
+            elif estado_jogo == "SELECAO_MUSICA":
+                if btn_iniciar_musica.collidepoint(mouse_pos): 
                     iniciar_partida()
                     estado_jogo = "JOGANDO"
-                #CLIQUE NAS SETAS
-                elif btn_esq.collidepoint(mouse_pos):
-                    musica_selecionada = (musica_selecionada - 1) % len(PLAYLIST)
-                elif btn_dir.collidepoint(mouse_pos):
-                    musica_selecionada = (musica_selecionada + 1) % len(PLAYLIST)
+                elif btn_voltar.collidepoint(mouse_pos): estado_jogo = "MENU_PRINCIPAL"
+                elif btn_esq.collidepoint(mouse_pos): musica_selecionada = (musica_selecionada - 1) % len(PLAYLIST)
+                elif btn_dir.collidepoint(mouse_pos): musica_selecionada = (musica_selecionada + 1) % len(PLAYLIST)
             
-            elif estado_jogo == "RESULTADOS" and botao_voltar.collidepoint(mouse_pos):
-                estado_jogo = "MENU"
+            elif estado_jogo == "INSTRUCOES":
+                if btn_voltar.collidepoint(mouse_pos): estado_jogo = "MENU_PRINCIPAL"
+                
+            elif estado_jogo == "CONFIGURACOES":
+                if btn_voltar.collidepoint(mouse_pos): estado_jogo = "MENU_PRINCIPAL"
+                elif btn_vol_menos.collidepoint(mouse_pos): 
+                    volume_atual = max(0.0, volume_atual - 0.1)
+                    pygame.mixer.music.set_volume(volume_atual)
+                elif btn_vol_mais.collidepoint(mouse_pos): 
+                    volume_atual = min(1.0, volume_atual + 0.1)
+                    pygame.mixer.music.set_volume(volume_atual)
+                    
+            elif estado_jogo == "RESULTADOS":
+                if btn_voltar.collidepoint(mouse_pos): estado_jogo = "MENU_PRINCIPAL"
 
-    # --- PROCESSAMENTO DE VISÃO COMPUTACIONAL ---
+    # --- PROCESSAMENTO DA CÂMARA ---
     success, image = cap.read()
-    if not success:
-        continue
+    if not success: continue
 
     image = cv2.flip(image, 1)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -192,48 +236,69 @@ while running:
     frame_surface = pygame.image.frombuffer(image_rgb_final.tobytes(), (WIDTH, HEIGHT), 'RGB')
     screen.blit(frame_surface, (0, 0))
 
-    # --- MÁQUINA DE ESTADOS ---
-    if estado_jogo == "MENU":
+    if estado_jogo != "JOGANDO":
         overlay = pygame.Surface((WIDTH, HEIGHT))
-        overlay.set_alpha(180) 
-        overlay.fill((10, 10, 20)) 
+        overlay.set_alpha(220) 
+        overlay.fill(COR_AZUL_ESCURO)
         screen.blit(overlay, (0, 0))
 
-        texto_titulo = font_titulo_performance.render("JUST LIBRAS", True, (255, 215, 0))
-        screen.blit(texto_titulo, (WIDTH // 2 - texto_titulo.get_width() // 2, HEIGHT // 4))
+    # --- RENDERIZAÇÃO DE INTERFACES ---
+    if estado_jogo == "MENU_PRINCIPAL":
+        titulo = font_titulo.render("JUST LIBRAS", True, COR_BRANCO)
+        screen.blit(titulo, (centro_x - titulo.get_width() // 2, HEIGHT // 4 - 30))
+        subtitulo = font_pequena.render("Rhythm Edition", True, COR_AZUL_CLARO)
+        screen.blit(subtitulo, (centro_x - subtitulo.get_width() // 2, HEIGHT // 4 + 60))
 
-        #DESENHAR SELETOR DE MÚSICA
-        screen.blit(texto_musica_menu, (WIDTH // 2 - texto_musica_menu.get_width() // 2, pos_y_selecao + 5))
+        desenhar_botao("JOGAR", btn_jogar, btn_jogar.collidepoint(mouse_pos))
+        desenhar_botao("INSTRUÇÕES", btn_instrucoes, btn_instrucoes.collidepoint(mouse_pos))
+        desenhar_botao("CONFIGURAÇÕES", btn_config, btn_config.collidepoint(mouse_pos))
+
+    elif estado_jogo == "INSTRUCOES":
+        titulo = font_grande.render("COMO JOGAR", True, COR_AZUL_CLARO)
+        screen.blit(titulo, (centro_x - titulo.get_width() // 2, 80))
         
-        texto_esq = font_grande.render("<", True, (255, 255, 255))
-        texto_dir = font_grande.render(">", True, (255, 255, 255))
+        instrucoes = [
+            "1. Prepara as suas mãos em frente à câmara.",
+            "2. Acompanha o ritmo da música escolhida.",
+            "3. Faça o sinal das letras que caírem em LIBRAS.",
+            "4. Acerta o sinal quando a letra cruzar a linha inferior!"
+        ]
         
-        # Efeito de hover nas setas
-        mouse_pos = pygame.mouse.get_pos()
-        cor_seta_esq = (0, 255, 255) if btn_esq.collidepoint(mouse_pos) else (255, 255, 255)
-        cor_seta_dir = (0, 255, 255) if btn_dir.collidepoint(mouse_pos) else (255, 255, 255)
+        y_inicial = HEIGHT // 2 - 100
+        for i, linha in enumerate(instrucoes):
+            texto = font_pequena.render(linha, True, COR_BRANCO)
+            screen.blit(texto, (centro_x - texto.get_width() // 2, y_inicial + (i * 60)))
+            
+        desenhar_botao("VOLTAR", btn_voltar, btn_voltar.collidepoint(mouse_pos), preenchido=False)
 
-        texto_esq = font_grande.render("<", True, cor_seta_esq)
-        texto_dir = font_grande.render(">", True, cor_seta_dir)
-
-        screen.blit(texto_esq, (btn_esq.x + 10, btn_esq.y))
-        screen.blit(texto_dir, (btn_dir.x + 10, btn_dir.y))
-
-        # Botão Iniciar
-        cor_btn = (0, 200, 100) if botao_start.collidepoint(mouse_pos) else (0, 150, 70)
-        pygame.draw.rect(screen, cor_btn, botao_start, border_radius=20)
-        pygame.draw.rect(screen, (255, 255, 255), botao_start, width=2, border_radius=20) 
+    elif estado_jogo == "CONFIGURACOES":
+        titulo = font_grande.render("CONFIGURAÇÕES", True, COR_AZUL_CLARO)
+        screen.blit(titulo, (centro_x - titulo.get_width() // 2, 80))
         
-        texto_btn = font_grande.render("INICIAR", True, (255, 255, 255))
-        screen.blit(texto_btn, (botao_start.centerx - texto_btn.get_width() // 2, botao_start.centery - texto_btn.get_height() // 2))
+        texto_vol = font_media.render(f"Volume: {int(volume_atual * 100)}%", True, COR_BRANCO)
+        screen.blit(texto_vol, (centro_x - texto_vol.get_width() // 2, HEIGHT // 2 - 100))
+        
+        desenhar_botao("-", btn_vol_menos, btn_vol_menos.collidepoint(mouse_pos))
+        desenhar_botao("+", btn_vol_mais, btn_vol_mais.collidepoint(mouse_pos))
+        desenhar_botao("VOLTAR", btn_voltar, btn_voltar.collidepoint(mouse_pos), preenchido=False)
+
+    elif estado_jogo == "SELECAO_MUSICA":
+        titulo = font_grande.render("ESCOLHA A FAIXA", True, COR_BRANCO)
+        screen.blit(titulo, (centro_x - titulo.get_width() // 2, HEIGHT // 4))
+        
+        screen.blit(texto_musica, (centro_x - texto_musica.get_width() // 2, HEIGHT // 2 - 40))
+        desenhar_botao("<", btn_esq, btn_esq.collidepoint(mouse_pos), preenchido=False)
+        desenhar_botao(">", btn_dir, btn_dir.collidepoint(mouse_pos), preenchido=False)
+        
+        desenhar_botao("INICIAR", btn_iniciar_musica, btn_iniciar_musica.collidepoint(mouse_pos))
+        desenhar_botao("VOLTAR", btn_voltar, btn_voltar.collidepoint(mouse_pos), preenchido=False)
 
     elif estado_jogo == "JOGANDO":
         tempo_atual = pygame.mixer.music.get_pos()
-        
         if not pygame.mixer.music.get_busy() and tempo_atual == -1:
             estado_jogo = "RESULTADOS"
 
-        prediction_text = "Nenhuma mao detectada"
+        prediction_text = "A Aguardar Sinal..."
         predicted_letter = ""
         confidence = 0
 
@@ -250,35 +315,29 @@ while running:
                     predicted_letter = prediction[0]
                     confidence = np.max(model.predict_proba(data_row_scaled))
 
-                    prediction_text = f"Pred: {predicted_letter.upper()} ({confidence * 100:.0f}%)"
+                    prediction_text = f"Sinal: {predicted_letter.upper()} ({confidence * 100:.0f}%)"
 
                     if confidence > 0.70:
                         for nota in MUSICA_ATUAL:
                             if not nota["atingida"]:
                                 distancia_tempo = abs(nota["tempo_alvo"] - tempo_atual)
-                                
                                 if distancia_tempo <= JANELA_ACERTO:
                                     if predicted_letter == nota["sinal"]:
                                         pontos += 10
                                         notas_acertadas += 1
                                         nota["atingida"] = True
                                         feedback_cor = (0, 255, 0)
-                                        if som_acerto:
-                                            som_acerto.play()
+                                        if som_acerto: som_acerto.play()
                                         break
-                                
                                 elif tempo_atual > nota["tempo_alvo"] + JANELA_ACERTO:
                                     nota["atingida"] = True
                                     feedback_cor = (255, 0, 0)
-                                    if som_falha:
-                                        som_falha.play()
-                except Exception as e:
-                    pass
+                                    if som_falha: som_falha.play()
+                except Exception as e: pass
 
-        if tempo_atual % 500 < 50: 
-            feedback_cor = (0, 0, 0)
+        if tempo_atual % 500 < 50: feedback_cor = (0, 0, 0)
 
-        pygame.draw.line(screen, (255, 215, 0), (0, HIT_ZONE_Y), (WIDTH, HIT_ZONE_Y), 5)
+        pygame.draw.line(screen, COR_DOURADO, (0, HIT_ZONE_Y), (WIDTH, HIT_ZONE_Y), 4)
 
         for nota in MUSICA_ATUAL:
             if not nota["atingida"]:
@@ -286,61 +345,50 @@ while running:
                 if -JANELA_ACERTO < tempo_falta <= TEMPO_VISIVEL:
                     progresso = 1 - (tempo_falta / TEMPO_VISIVEL)
                     nota_y = int(HIT_ZONE_Y * progresso)
-                    texto_nota = font_grande.render(nota["sinal"].upper(), True, (0, 255, 255))
-                    screen.blit(texto_nota, (WIDTH // 2 - texto_nota.get_width() // 2, nota_y - texto_nota.get_height() // 2))
+                    
+                    rect_nota = pygame.Rect(centro_x - 30, nota_y - 30, 60, 60)
+                    pygame.draw.rect(screen, COR_AZUL_CLARO, rect_nota, border_radius=30)
+                    
+                    texto_nota = font_media.render(nota["sinal"].upper(), True, COR_BRANCO)
+                    screen.blit(texto_nota, (centro_x - texto_nota.get_width() // 2, nota_y - texto_nota.get_height() // 2))
 
-        texto_pontos = font_media.render(f"Pontos: {pontos}", True, (0, 255, 0))
-        screen.blit(texto_pontos, (WIDTH - 200, 30))
-        texto_pred = font_pequena.render(prediction_text, True, (255, 255, 255))
-        screen.blit(texto_pred, (10, HEIGHT - 40))
+        painel_ui = pygame.Surface((WIDTH, 80), pygame.SRCALPHA)
+        painel_ui.fill((15, 35, 70, 180))
+        screen.blit(painel_ui, (0, 0))
+        
+        texto_pontos = font_media.render(f"PONTUAÇÃO: {pontos}", True, COR_DOURADO)
+        screen.blit(texto_pontos, (WIDTH - texto_pontos.get_width() - 20, 25))
+        
+        texto_pred = font_pequena.render(prediction_text, True, COR_BRANCO)
+        screen.blit(texto_pred, (20, 25))
 
         if feedback_cor != (0, 0, 0):
-            pygame.draw.rect(screen, feedback_cor, (0, 0, WIDTH, HEIGHT), 10)
+            pygame.draw.rect(screen, feedback_cor, (0, 0, WIDTH, HEIGHT), 8)
 
     elif estado_jogo == "RESULTADOS":
-        overlay = pygame.Surface((WIDTH, HEIGHT))
-        overlay.set_alpha(220) 
-        overlay.fill((10, 10, 25)) 
-        screen.blit(overlay, (0, 0))
-
-        texto_fim = font_titulo_performance.render("PERFORMANCE", True, (255, 255, 255))
-        screen.blit(texto_fim, (WIDTH // 2 - texto_fim.get_width() // 2, 60))
+        titulo = font_grande.render("DESEMPENHO", True, COR_BRANCO)
+        screen.blit(titulo, (centro_x - titulo.get_width() // 2, 60))
 
         taxa_acerto = (notas_acertadas / total_notas) * 100 if total_notas > 0 else 0
         rank_letra, rank_cor = calcular_rank(taxa_acerto)
         
-        texto_rank = font_rank_gigante.render(rank_letra, True, rank_cor)
-        pos_y_rank = HEIGHT // 2 - texto_rank.get_height() // 2 - 20
-        screen.blit(texto_rank, (WIDTH // 2 - texto_rank.get_width() // 2, pos_y_rank))
+        texto_rank = get_font(180).render(rank_letra, True, rank_cor)
+        screen.blit(texto_rank, (centro_x - texto_rank.get_width() // 2, 140))
 
-        cor_estatistica = (220, 220, 220) 
+        texto_pontos = font_media.render(f"{pontos} PONTOS", True, COR_BRANCO)
+        screen.blit(texto_pontos, (centro_x - texto_pontos.get_width() // 2, 340))
         
-        texto_pontos_finais = font_grande.render(f"{pontos} PONTOS", True, (0, 255, 0))
-        pos_y_pontos = pos_y_rank + texto_rank.get_height() + 20
-        screen.blit(texto_pontos_finais, (WIDTH // 2 - texto_pontos_finais.get_width() // 2, pos_y_pontos))
+        texto_precisao = font_pequena.render(f"Precisão: {taxa_acerto:.1f}% ({notas_acertadas}/{total_notas})", True, COR_AZUL_CLARO)
+        screen.blit(texto_precisao, (centro_x - texto_precisao.get_width() // 2, 390))
 
-        pos_y_detalhes = pos_y_pontos + texto_pontos_finais.get_height() + 15
-        
-        texto_detalhes_acertos = font_media.render(f"Notas: {notas_acertadas} / {total_notas}", True, cor_estatistica)
-        texto_detalhes_precisao = font_media.render(f"Precisão: {taxa_acerto:.1f}%", True, cor_estatistica)
-        
-        screen.blit(texto_detalhes_acertos, (WIDTH // 2 - texto_detalhes_acertos.get_width() // 2, pos_y_detalhes))
-        screen.blit(texto_detalhes_precisao, (WIDTH // 2 - texto_detalhes_precisao.get_width() // 2, pos_y_detalhes + texto_detalhes_acertos.get_height() + 5))
-
-        mouse_pos = pygame.mouse.get_pos()
-        cor_btn_voltar = (50, 50, 70) if botao_voltar.collidepoint(mouse_pos) else (30, 30, 50)
-        pygame.draw.rect(screen, cor_btn_voltar, botao_voltar, border_radius=20)
-        pygame.draw.rect(screen, rank_cor, botao_voltar, width=3, border_radius=20) 
-        
-        texto_btn_voltar = font_media.render("MENU PRINCIPAL", True, (255, 255, 255))
-        screen.blit(texto_btn_voltar, (botao_voltar.centerx - texto_btn_voltar.get_width() // 2, botao_voltar.centery - texto_btn_voltar.get_height() // 2))
-
-    texto_volume = font_pequena.render(f"Vol: {int(volume_atual * 100)}%", True, (150, 150, 150))
-    screen.blit(texto_volume, (10, 10))
+        desenhar_botao("MENU PRINCIPAL", btn_voltar, btn_voltar.collidepoint(mouse_pos))
 
     pygame.display.flip()
     clock.tick(30)
 
+# ==========================================
+# 6. ENCERRAMENTO
+# ==========================================
 hands.close()
 cap.release()
 pygame.quit()
